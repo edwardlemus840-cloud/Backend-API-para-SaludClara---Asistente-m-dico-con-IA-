@@ -1580,35 +1580,30 @@ function seleccionarLugarCita(lugar) {
 // Funciones del modal de mapa eliminadas - Ya no se usan (mapa integrado en formulario)
 
 // ===== ENVÍO DE CORREO ELECTRÓNICO =====
-// Inicializar EmailJS
-(function() {
-    if (typeof emailjs !== 'undefined') {
-        emailjs.init('kRtO1Dgpdb5lmOu5B');
-        console.log('✅ EmailJS inicializado correctamente');
-    } else {
-        console.error('❌ EmailJS no está cargado');
-    }
-})();
-
 async function enviarCorreoConfirmacion(datos) {
     console.log('📧 Intentando enviar correo de confirmación...');
     console.log('Datos del correo:', datos);
+    console.log('📧 CORREO DESTINO:', datos.correo);
     
     try {
+        const payload = {
+            email_paciente: datos.correo,
+            nombre_paciente: datos.nombre,
+            codigo_confirmacion: datos.codigo,
+            tipo_cita: datos.tipo === '💻 Virtual (Videollamada)' ? 'virtual' : 'presencial',
+            lugar: datos.lugar || null,
+            especialidad: datos.especialidad,
+            fecha: datos.fecha,
+            hora: datos.hora,
+            motivo: datos.motivo
+        };
+        
+        console.log('📤 Enviando al backend:', payload);
+        
         // Llamar al endpoint del backend para enviar el correo
         const response = await apiFetch('/api/enviar-correo-cita', {
             method: 'POST',
-            body: JSON.stringify({
-                email_paciente: datos.correo,
-                nombre_paciente: datos.nombre,
-                codigo_confirmacion: datos.codigo,
-                tipo_cita: datos.tipo === '💻 Virtual (Videollamada)' ? 'virtual' : 'presencial',
-                lugar: datos.lugar || null,
-                especialidad: datos.especialidad,
-                fecha: datos.fecha,
-                hora: datos.hora,
-                motivo: datos.motivo
-            })
+            body: JSON.stringify(payload)
         });
         
         console.log('✅ Correo enviado exitosamente:', response);
