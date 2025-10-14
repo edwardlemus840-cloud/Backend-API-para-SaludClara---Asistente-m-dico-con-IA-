@@ -7,7 +7,6 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
-const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const { verificarToken, verificarTokenOpcional, generarToken } = require('./middleware/auth');
@@ -38,31 +37,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' })); // Aumentar límite para imágenes base64
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-// ============================================
-// RUTA RAÍZ - INFO DE LA API
-// ============================================
-app.get('/', (req, res) => {
-    res.json({
-        mensaje: '🏥 SaludClara API - Backend funcionando correctamente',
-        version: '1.0.0',
-        endpoints: {
-            autenticacion: [
-                'POST /api/auth/registro',
-                'POST /api/auth/login',
-                'POST /api/auth/google',
-                'GET /api/auth/me'
-            ],
-            servicios: [
-                'POST /api/chat',
-                'POST /api/citas',
-                'GET /api/citas/:userId'
-            ]
-        },
-        estado: 'online',
-        timestamp: new Date().toISOString()
-    });
-});
 
 // ============================================
 // ENDPOINTS DE AUTENTICACIÓN
@@ -746,155 +720,6 @@ app.get('/api/citas/usuario/:usuarioId/estadisticas', verificarToken, async (req
     } catch (error) {
         console.error('Error al obtener estadísticas:', error);
         res.status(500).json({ error: 'Error al obtener estadísticas' });
-    }
-});
-
-// ============================================
-// ENDPOINT PARA ENVIAR CORREO DE CONFIRMACIÓN
-// ============================================
-app.post('/api/enviar-correo-cita', async (req, res) => {
-    try {
-        const {
-            email_paciente,
-            nombre_paciente,
-            codigo_confirmacion,
-            tipo_cita,
-            lugar,
-            especialidad,
-            fecha,
-            hora,
-            motivo
-        } = req.body;
-
-        // Validar que vengan los datos requeridos
-        if (!email_paciente || !nombre_paciente || !codigo_confirmacion) {
-            return res.status(400).json({ error: 'Faltan datos requeridos' });
-        }
-
-        // Verificar que las credenciales de Gmail estén configuradas
-        if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-            console.error('❌ Credenciales de Gmail no configuradas');
-            return res.status(500).json({ 
-                error: 'Servicio de correo no configurado. Contacta al administrador.' 
-            });
-        }
-
-        // Configurar el transporter de nodemailer con Gmail
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.GMAIL_USER,
-                pass: process.env.GMAIL_APP_PASSWORD
-            }
-        });
-
-        // Formatear la fecha
-        const fechaFormateada = new Date(fecha + 'T00:00:00').toLocaleDateString('es-ES', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-
-        // Contenido del correo en HTML
-        const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-        .info-box { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #667eea; }
-        .info-row { margin: 10px 0; }
-        .label { font-weight: bold; color: #667eea; }
-        .codigo { background: #667eea; color: white; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; border-radius: 8px; margin: 20px 0; letter-spacing: 2px; }
-        .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; color: #666; font-size: 12px; }
-        .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 8px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🏥 SaludClara</h1>
-            <h2>Confirmación de Cita Médica</h2>
-        </div>
-        <div class="content">
-            <p>Hola <strong>${nombre_paciente}</strong>,</p>
-            <p>Tu cita médica ha sido confirmada exitosamente. A continuación encontrarás los detalles:</p>
-            
-            <div class="codigo">
-                📋 ${codigo_confirmacion}
-            </div>
-            
-            <div class="info-box">
-                <h3 style="margin-top: 0; color: #667eea;">📅 Detalles de la Cita</h3>
-                <div class="info-row">
-                    <span class="label">Tipo de Cita:</span> ${tipo_cita === 'virtual' ? '💻 Virtual (Videollamada)' : '🏥 Presencial'}
-                </div>
-                ${lugar ? `<div class="info-row"><span class="label">Lugar:</span> ${lugar}</div>` : ''}
-                <div class="info-row">
-                    <span class="label">Especialidad:</span> ${especialidad}
-                </div>
-                <div class="info-row">
-                    <span class="label">Fecha:</span> ${fechaFormateada}
-                </div>
-                <div class="info-row">
-                    <span class="label">Hora:</span> ${hora}
-                </div>
-                ${motivo ? `<div class="info-row"><span class="label">Motivo:</span> ${motivo}</div>` : ''}
-            </div>
-            
-            <div class="warning">
-                <strong>⚠️ Importante:</strong>
-                <ul style="margin: 10px 0;">
-                    <li>Llega 15 minutos antes de tu cita</li>
-                    <li>Trae tu documento de identidad</li>
-                    ${tipo_cita === 'virtual' ? '<li>Asegúrate de tener buena conexión a internet</li>' : '<li>Trae tu carnet de seguro (si aplica)</li>'}
-                    <li>Guarda este correo como comprobante</li>
-                </ul>
-            </div>
-            
-            <p style="text-align: center; margin-top: 30px;">
-                <strong>¿Necesitas cancelar o reprogramar?</strong><br>
-                Ingresa a tu cuenta en SaludClara con el código: <strong>${codigo_confirmacion}</strong>
-            </p>
-        </div>
-        <div class="footer">
-            <p><strong>SaludClara</strong> - Tu salud, nuestra prioridad</p>
-            <p>Este es un correo automático, por favor no responder.</p>
-            <p>© ${new Date().getFullYear()} SaludClara. Todos los derechos reservados.</p>
-        </div>
-    </div>
-</body>
-</html>
-        `;
-
-        // Opciones del correo
-        const mailOptions = {
-            from: `"SaludClara 🏥" <${process.env.GMAIL_USER}>`,
-            to: email_paciente,
-            subject: `✅ Cita Confirmada - ${codigo_confirmacion} - SaludClara`,
-            html: htmlContent
-        };
-
-        // Enviar el correo
-        const info = await transporter.sendMail(mailOptions);
-        
-        console.log('✅ Correo enviado exitosamente:', info.messageId);
-        
-        res.json({ 
-            mensaje: 'Correo enviado exitosamente',
-            messageId: info.messageId
-        });
-
-    } catch (error) {
-        console.error('❌ Error al enviar correo:', error);
-        res.status(500).json({ 
-            error: 'Error al enviar correo: ' + error.message 
-        });
     }
 });
 

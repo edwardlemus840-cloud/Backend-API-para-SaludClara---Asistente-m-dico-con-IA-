@@ -21,9 +21,8 @@ Sistema completo de salud con IA, autenticación dual (Google + Local), gestión
 - ✅ Reserva de citas médicas
 - ✅ Selección de ubicación en mapa interactivo
 - ✅ Citas presenciales y virtuales
-- ✅ **Confirmación automática por email (Gmail/Nodemailer)**
+- ✅ Confirmación por email (EmailJS)
 - ✅ Código de confirmación único
-- ✅ Correos HTML profesionales con todos los detalles
 
 ### 🗺️ Mapa Interactivo
 - ✅ Hospitales y clínicas de El Salvador
@@ -45,7 +44,6 @@ Sistema completo de salud con IA, autenticación dual (Google + Local), gestión
 - **bcryptjs** (encriptación de contraseñas)
 - **Google OAuth 2.0**
 - **Groq API** (IA - Llama 3.3 70B)
-- **Nodemailer** (envío de correos con Gmail)
 
 ### Frontend
 - **HTML5** + **TailwindCSS**
@@ -76,7 +74,7 @@ saludclara/
 ├── database/
 │   └── schema.sql               # Schema de PostgreSQL
 ├── INSTRUCCIONES_SETUP.md       # 📖 Guía de configuración
-├── CONFIGURAR_GMAIL.md          # 📧 Configurar envío de correos
+├── INSTRUCCIONES_EMAILJS.md     # 📧 Configurar emails
 └── README.md                    # Este archivo
 ```
 
@@ -132,7 +130,7 @@ http://localhost:5500
 
 Para instrucciones detalladas paso a paso, consulta:
 - **[INSTRUCCIONES_SETUP.md](./INSTRUCCIONES_SETUP.md)** - Configuración completa del sistema
-- **[CONFIGURAR_GMAIL.md](./CONFIGURAR_GMAIL.md)** - 📧 Configurar envío automático de correos con Gmail
+- **[INSTRUCCIONES_EMAILJS.md](./INSTRUCCIONES_EMAILJS.md)** - Configurar envío de correos
 
 ## 🔑 Variables de Entorno (.env)
 
@@ -155,10 +153,6 @@ JWT_SECRET=tu_secreto_super_seguro
 
 # Google OAuth
 GOOGLE_CLIENT_ID=tu_client_id.apps.googleusercontent.com
-
-# Gmail para envío de correos automáticos
-GMAIL_USER=tucorreo@gmail.com
-GMAIL_APP_PASSWORD=tu_password_de_aplicacion
 ```
 
 ## 📊 Base de Datos
@@ -197,14 +191,6 @@ POST /api/chat                # Chat de síntomas
 POST /api/traducir            # Traducir término médico
 POST /api/analizar-documento  # Analizar documento médico
 POST /api/analizar-texto-medico # Analizar texto extraído (OCR)
-```
-
-### Citas
-```
-POST /api/citas               # Crear nueva cita (requiere token)
-GET  /api/citas/usuario/:id   # Obtener citas del usuario (requiere token)
-PUT  /api/citas/:codigo/cancelar # Cancelar cita (requiere token)
-POST /api/enviar-correo-cita  # Enviar correo de confirmación
 ```
 
 ### Sistema

@@ -1,5 +1,5 @@
 // ===== VARIABLES GLOBALES =====
-const API_URL = 'https://saludclara-backend.onrender.com'; // URL del backend en producción
+const API_URL = 'http://localhost:3001'; // URL de tu backend
 let conversationHistory = [];
 
 // Utilidad: Fetch genérico con manejo de errores
@@ -353,20 +353,9 @@ function siguientePasoCita(paso) {
             
             console.log('Validando Paso 2:', { fecha, hora, motivo });
             
-            // Validación específica por campo
-            if (!fecha) {
-                console.log('❌ Falta: Fecha');
-                mostrarNotificacion('Por favor selecciona la fecha de la cita', 'warning');
-                return;
-            }
-            if (!hora) {
-                console.log('❌ Falta: Hora');
-                mostrarNotificacion('Por favor selecciona la hora de la cita', 'warning');
-                return;
-            }
-            if (!motivo || motivo.trim().length < 10) {
-                console.log('❌ Falta: Motivo (mínimo 10 caracteres)');
-                mostrarNotificacion('Por favor describe el motivo de tu consulta (mínimo 10 caracteres)', 'warning');
+            if (!fecha || !hora || !motivo) {
+                console.log('❌ Validación fallida: Campos incompletos');
+                mostrarNotificacion('Por favor completa todos los campos obligatorios', 'warning');
                 return;
             }
             
@@ -418,17 +407,14 @@ const obtenerDatosCita = () => {
     const fechaEl = document.getElementById('cita-fecha');
     const horaEl = document.getElementById('cita-hora');
     
-    // Obtener especialidad (ahora es un hidden input que se llena desde los radio buttons)
-    const especialidad = especialidadEl ? especialidadEl.value : '';
-    
     return {
         nombre: nombreEl ? nombreEl.value : '',
         correo: correoEl ? correoEl.value : '',
         telefono: telefonoEl ? telefonoEl.value : '',
         tipo: tipoEl ? tipoEl.value : '',
         lugar: lugarSeleccionado,
-        especialidad: especialidad,
-        especialidadTexto: especialidad, // Ya es texto directo
+        especialidad: especialidadEl ? especialidadEl.value : '',
+        especialidadTexto: especialidadEl && especialidadEl.selectedOptions[0] ? especialidadEl.selectedOptions[0].text : '',
         fecha: fechaEl ? fechaEl.value : '',
         hora: horaEl ? horaEl.value : ''
     };
@@ -1590,35 +1576,46 @@ function seleccionarLugarCita(lugar) {
     }
 })();
 
-async function enviarCorreoConfirmacion(datos) {
+function enviarCorreoConfirmacion(datos) {
     console.log('📧 Intentando enviar correo de confirmación...');
     console.log('Datos del correo:', datos);
     
-    try {
-        // Llamar al endpoint del backend para enviar el correo
-        const response = await apiFetch('/api/enviar-correo-cita', {
-            method: 'POST',
-            body: JSON.stringify({
-                email_paciente: datos.correo,
-                nombre_paciente: datos.nombre,
-                codigo_confirmacion: datos.codigo,
-                tipo_cita: datos.tipo === '💻 Virtual (Videollamada)' ? 'virtual' : 'presencial',
-                lugar: datos.lugar || null,
-                especialidad: datos.especialidad,
-                fecha: datos.fecha,
-                hora: datos.hora,
-                motivo: datos.motivo
-            })
-        });
-        
-        console.log('✅ Correo enviado exitosamente:', response);
-        mostrarNotificacion('✅ Confirmación enviada a tu correo', 'success');
-        
-    } catch (error) {
-        console.error('❌ Error al enviar correo:', error);
-        // No mostrar error al usuario si el correo falla, la cita ya está guardada
-        console.log('⚠️ El correo no se pudo enviar, pero la cita está confirmada');
+    // Verificar si EmailJS está disponible
+    if (typeof emailjs === 'undefined') {
+        console.error('❌ EmailJS no está disponible');
+        mostrarNotificacion('⚠️ Servicio de correo no disponible, pero tu cita está confirmada', 'warning');
+        return;
     }
+    
+    // Parámetros del template
+    const templateParams = {
+        to_email: datos.correo,
+        to_name: datos.nombre,
+        codigo: datos.codigo,
+        nombre: datos.nombre,
+        telefono: datos.telefono,
+        tipo: datos.tipo,
+        lugar: datos.lugar || 'Virtual',
+        especialidad: datos.especialidad,
+        fecha: datos.fecha,
+        hora: datos.hora,
+        motivo: datos.motivo
+    };
+    
+    console.log('Parámetros del template:', templateParams);
+    console.log('Service ID: service_fgrr6ji');
+    console.log('Template ID: template_jshg1fq');
+    
+    emailjs.send('service_fgrr6ji', 'template_jshg1fq', templateParams)
+        .then(function(response) {
+            console.log('✅ Correo enviado exitosamente!', response.status, response.text);
+            mostrarNotificacion('✅ Confirmación enviada a tu correo', 'success');
+        })
+        .catch(function(error) {
+            console.error('❌ Error al enviar correo:', error);
+            console.error('Detalles del error:', JSON.stringify(error));
+            mostrarNotificacion('⚠️ No se pudo enviar el correo, pero tu cita está confirmada', 'warning');
+        });
 }
 
 function mostrarNotificacion(mensaje, tipo) {
