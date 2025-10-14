@@ -1,0 +1,31 @@
+services:
+  # Backend API
+  - type: web
+    name: saludclara-backend
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        fromDatabase:
+          name: saludclara-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+
+  # Base de datos PostgreSQL
+  - type: pserv
+    name: saludclara-db
+    plan: free
+    databaseName: saludclara
+    user: saludclara_user
