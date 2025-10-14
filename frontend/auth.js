@@ -2,7 +2,7 @@
 // SISTEMA DE AUTENTICACIÓN
 // ============================================
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://saludclara-backend.onrender.com';
 const GOOGLE_CLIENT_ID = ''; // Se configurará desde el backend
 
 // Estado de autenticación
