@@ -727,7 +727,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🏥 Servidor SaludClara corriendo en http://localhost:${PORT}`);
     console.log('📡 Endpoints disponibles:');
     console.log(`   - POST http://localhost:${PORT}/api/chat`);
