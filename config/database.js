@@ -5,6 +5,10 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+// Debug: Verificar qué configuración se está usando
+console.log('🔍 DATABASE_URL presente:', !!process.env.DATABASE_URL);
+console.log('🔍 Usando configuración:', process.env.DATABASE_URL ? 'Render (DATABASE_URL)' : 'Local (variables individuales)');
+
 // Configuración para Render (usa DATABASE_URL) o local (usa variables individuales)
 const pool = new Pool(
     process.env.DATABASE_URL
