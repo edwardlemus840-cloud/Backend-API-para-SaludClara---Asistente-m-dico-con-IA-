@@ -726,6 +726,47 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// ENDPOINT TEMPORAL PARA VERIFICAR TABLAS
+app.get('/api/verificar-tablas', async (req, res) => {
+    try {
+        // Obtener lista de tablas
+        const result = await pool.query(`
+            SELECT table_name, 
+                   (SELECT COUNT(*) FROM information_schema.columns 
+                    WHERE table_name = t.table_name AND table_schema = 'public') as columnas
+            FROM information_schema.tables t
+            WHERE table_schema = 'public'
+            ORDER BY table_name;
+        `);
+
+        // Contar registros en cada tabla
+        const tablasConDatos = [];
+        for (const tabla of result.rows) {
+            const count = await pool.query(`SELECT COUNT(*) as total FROM ${tabla.table_name}`);
+            tablasConDatos.push({
+                nombre: tabla.table_name,
+                columnas: parseInt(tabla.columnas),
+                registros: parseInt(count.rows[0].total)
+            });
+        }
+
+        res.json({
+            mensaje: 'Verificación de base de datos',
+            total_tablas: result.rows.length,
+            tablas: tablasConDatos,
+            tablas_esperadas: ['usuarios', 'citas', 'historial_chat', 'documentos_medicos'],
+            todas_existen: tablasConDatos.length >= 4
+        });
+
+    } catch (error) {
+        console.error('Error al verificar tablas:', error);
+        res.status(500).json({ 
+            error: 'Error al verificar tablas',
+            detalle: error.message 
+        });
+    }
+});
+
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🏥 Servidor SaludClara corriendo en http://localhost:${PORT}`);
